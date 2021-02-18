@@ -35,7 +35,9 @@ class TemperatureFan:
             'target_temp', 40. if self.max_temp > 40. else self.max_temp,
             minval=self.min_temp, maxval=self.max_temp)
         self.target_temp = self.target_temp_conf
-        algos = {'watermark': ControlBangBang, 'pid': ControlPID}
+        algos = {'watermark': ControlBangBang,
+                'pid': ControlPID,
+                'threshold': ControlThreshold}
         algo = config.getchoice('control', algos)
         self.control = algo(self, config)
         self.next_speed_time = 0.
@@ -132,6 +134,56 @@ class ControlBangBang:
         else:
             self.temperature_fan.set_speed(read_time,
                                            self.temperature_fan.get_max_speed())
+
+######################################################################
+# Threshold control algo
+######################################################################
+
+class ControlThreshold:
+    def __init__(self, temperature_fan, config):
+        self.temperature_fan = temperature_fan
+        self.max_delta = config.getfloat('max_delta', 2.0, above=0.)
+
+        self.thresholds = {}
+        for threshold_opt in config.get_prefix_options("threshold_"):
+            threshold = threshold_opt.split('_',1)[1].rsplit('_',1)[0]
+            temp = config.get_float('threshold_'+threhold+'_temp',
+                        minval=self.temperature_fan.min_temp,
+                        maxval=self.temperature_fan.max_temp)
+            if temp in self.thresholds:
+                pass
+            speed = config.get_float('threshold_'+threhold+'_speed',
+                minval=self.temperature_fan.get_min_speed(),
+                maxval=self.temperature_fan.get_max_speed())
+            thresholds[temp] = speed
+
+        if not self.thresholds:
+            self.thresholds = {
+                    self.temperature_fan.min_temp: 0.0,
+                    30.0: temperature_fan.get_min_speed(),
+                    40.0: (temperature_fan.get_max_speed()+
+                        temperature_fan.get_min_speed()) / 2,
+                    50.0: temperature_fan.get_max_speed(),
+                    }
+
+        if self.temperature_fan.min_temp not in self.thresholds:
+            self.thresholds[self.temperature_fan.min_temp] = 0.0
+
+        self.current_min = self.temperature_fan.min_temp - self.max_delta
+        self.current_max = sorted(self.thresholds.items())[1][0] + self.max_delta
+    def temperature_callback(self, read_time, temp):
+        if self.current_min <= temp <= self.current_max:
+            return
+
+        self.current_max = self.temperature_fan.max_temp
+        for threshold_temp, threshold_speed in sorted(self.thresholds.items(), reverse=True):
+            if temp < threshold_temp:
+                self.current_max = threshold_temp + self.max_delta
+            else:
+                self.current_min = threshold_temp - self.max_delta
+                self.temperature_fan.set_speed(
+                        read_time, threshold_speed)
+                break
 
 ######################################################################
 # Proportional Integral Derivative (PID) control algo

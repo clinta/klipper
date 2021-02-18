@@ -2317,6 +2317,19 @@ additional information.
 #sensor_type:
 #sensor_pin:
 #control:
+#   Control algorithm (either pid, watermark or threshold). This parameter must
+#   be provided.
+#threshold_[name]_temp:
+#threshold_[name]_speed:
+#   One may define any number of named threshold temperatures and speeds to
+#   activate when using threshold control.
+#   The defaults are:
+#       threshold_low_temp: 30.0
+#       threshold_low_speed: [min_speed]
+#       threshold_mid_temp: 40.0
+#       threshold_mid_speed: [(min_speed + max speed) / 2]
+#       threshold_high_temp: 50.0
+#       threshold_high_speed: [max_speed]
 #pid_Kp:
 #pid_Ki:
 #pid_Kd:

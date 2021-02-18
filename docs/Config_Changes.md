@@ -6,6 +6,9 @@ All dates in this document are approximate.
 
 # Changes
 
+20210218: The [temperature_fan] config supports a new algorithm `threshold`
+which allows setting temperature thresholds and power levels.
+
 20210201: The `TEST_RESONANCES` command will now disable input shaping
 if it was previously enabled (and re-enable it after the test). In order
 to override this behavior and keep the input shaping enabled, one can
